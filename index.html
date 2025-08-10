@@ -1,0 +1,1230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>System Design Canvas — Customizable Nodes</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #070710;
+        --panel: #0e1116;
+        --muted: #98a0ad;
+        --accent: #8b5cf6;
+        --accent-2: #7c3aed;
+        --card: #0c0e13;
+        --white: #ffffff;
+        --radius: 10px;
+      }
+
+      /* layout */
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: var(--bg);
+        font-family: Inter, system-ui, Roboto, -apple-system;
+        color: #e6eef8;
+      }
+      .app {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        gap: 18px;
+        height: 100vh;
+        padding: 20px;
+        box-sizing: border-box;
+      }
+
+      /* LEFT chat area */
+      .left {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.01),
+          transparent
+        );
+        border-radius: var(--radius);
+        padding: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        overflow-y: auto;
+      }
+      .brand {
+        font-weight: 700;
+        font-size: 18px;
+      }
+      .hint {
+        color: var(--muted);
+        font-size: 13px;
+      }
+      .messages {
+        flex: 1;
+        overflow: auto;
+        padding: 6px;
+        border-radius: 8px;
+      }
+      .msg {
+        max-width: 88%;
+        padding: 10px;
+        border-radius: 8px;
+        margin-bottom: 8px;
+      }
+      .msg.user {
+        align-self: flex-end;
+        background: linear-gradient(90deg, #111827, #0f1724);
+        color: #fff;
+      }
+      .msg.ai {
+        align-self: flex-start;
+        background: rgba(255, 255, 255, 0.02);
+        color: var(--muted);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .chat-input {
+        display: flex;
+        gap: 8px;
+      }
+      textarea {
+        flex: 1;
+        min-height: 70px;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        background: transparent;
+        color: #fff;
+      }
+
+      /* RIGHT canvas area */
+      .canvas-wrap {
+        border-radius: var(--radius);
+        padding: 12px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.01),
+          rgba(255, 255, 255, 0)
+        );
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+        display: flex;
+        flex-direction: column;
+      }
+      .toolbar {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-bottom: 8px;
+      }
+      .canvas {
+        position: relative;
+        border-radius: 8px;
+        height: calc(100vh - 120px);
+        overflow: auto;
+        /* silent checks pattern: subtle checkerboard using gradients, tinted with accent */
+        background-color: #070710;
+        background-image: linear-gradient(
+            90deg,
+            rgba(139, 92, 246, 0.02) 1px,
+            transparent 1px
+          ),
+          linear-gradient(rgba(139, 92, 246, 0.02) 1px, transparent 1px);
+        background-size: 24px 24px;
+        background-position: 0 0, 12px 12px;
+      }
+
+      /* svg links */
+      svg.links {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        z-index: 5;
+      }
+      .links path {
+        stroke: #ffffff;
+        stroke-width: 2;
+        fill: none;
+        stroke-linecap: round;
+        opacity: 0.95;
+      }
+      .temp-path {
+        stroke: #cdb3ff;
+        stroke-width: 2;
+        fill: none;
+        stroke-dasharray: 6 6;
+        pointer-events: none;
+      }
+
+      /* node — solid rectangle design */
+      .node {
+        position: absolute;
+        min-width: 200px;
+        max-width: 340px;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        box-shadow: 0 12px 28px rgba(2, 6, 23, 0.6);
+        cursor: grab;
+        z-index: 10;
+        overflow: visible;
+        color: #fff;
+      }
+      .node .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 8px;
+      }
+      .leftmeta {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .icon-badge {
+        width: 40px;
+        height: 40px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 700;
+        flex-shrink: 0;
+      }
+      .title-node {
+        font-weight: 700;
+      }
+      .desc-node {
+        font-size: 13px;
+        color: rgba(255, 255, 255, 0.85);
+        margin-top: 6px;
+      }
+
+      /* chips */
+      .chips {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+      }
+      .chips .chip {
+        padding: 6px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.9);
+        background: rgba(0, 0, 0, 0.12);
+      }
+
+      /* connector dots balanced */
+      .dot {
+        position: absolute;
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: #0b0d12;
+        border: 2px solid rgba(255, 255, 255, 0.06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 12;
+      }
+      .dot.top {
+        left: 50%;
+        transform: translateX(-50%);
+        top: -8px;
+      }
+      .dot.bottom {
+        left: 50%;
+        transform: translateX(-50%);
+        bottom: -8px;
+      }
+      .dot.left {
+        top: 50%;
+        transform: translateY(-50%);
+        left: -8px;
+      }
+      .dot.right {
+        top: 50%;
+        transform: translateY(-50%);
+        right: -8px;
+      }
+
+      /* menu dropdown */
+      .menu-list {
+        position: absolute;
+        right: 6px;
+        top: 30px;
+        background: #0b0d12;
+        padding: 8px;
+        border-radius: 8px;
+        display: none;
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+        z-index: 40;
+      }
+      .menu-list.show {
+        display: block;
+      }
+      .menu-list .mbtn {
+        display: block;
+        width: 100%;
+        padding: 8px;
+        margin-bottom: 6px;
+        background: white;
+        color: black;
+        border-radius: 6px;
+        text-align: left;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+      }
+      .menu-list .mb-danger {
+        background: transparent;
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.12);
+      }
+
+      /* canvas floating add */
+      .canvas-add {
+        position: absolute;
+        right: 20px;
+        bottom: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 28px;
+        cursor: pointer;
+        z-index: 30;
+        border: none;
+        box-shadow: 0 12px 36px rgba(124, 58, 237, 0.18);
+      }
+
+      /* modal */
+      .modal-backdrop {
+        position: fixed;
+        inset: 0;
+        background: rgba(2, 6, 23, 0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 90;
+      }
+      .modal-card {
+        background: #0d1116;
+        padding: 16px;
+        border-radius: 10px;
+        min-width: 420px;
+      }
+      .tech-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+        margin-top: 8px;
+      }
+      .tech-item {
+        padding: 8px;
+        border-radius: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.02);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+      }
+
+      /* small color preview */
+      .color-preview {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
+      /* responsive */
+      @media (max-width: 900px) {
+        .app {
+          grid-template-columns: 1fr;
+        }
+        .left {
+          order: 2;
+        }
+        .canvas-wrap {
+          order: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <!-- left: chat/history -->
+      <div class="left">
+        <div class="brand">⚙️ System Design Canvas</div>
+        <div class="hint">
+          All chat history is here. When AI returns a design you'll get an
+          `Apply` button in the message.
+        </div>
+
+        <div class="messages" id="messages"></div>
+
+        <div class="chat-input">
+          <textarea
+            id="prompt"
+            placeholder="Describe the system or request changes (Ctrl+Enter to send)"
+          ></textarea>
+          <div style="display: flex; flex-direction: column; gap: 8px">
+            <button id="sendBtn" class="btn primary">Send</button>
+            <button id="clearChat" class="btn">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- right: canvas -->
+      <div class="canvas-wrap">
+        <div class="toolbar"><div style="flex: 1"></div></div>
+        <div id="canvas" class="canvas" tabindex="0">
+          <svg id="linksSvg" class="links">
+            <defs>
+              <marker
+                id="arrow"
+                viewBox="0 0 10 10"
+                refX="9"
+                refY="5"
+                markerWidth="6"
+                markerHeight="6"
+                orient="auto"
+              >
+                <path d="M 0 0 L 10 5 L 0 10 z" fill="#ffffff" />
+              </marker>
+            </defs>
+          </svg>
+
+          <button id="canvasAdd" class="canvas-add" title="Add component">
+            ＋
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- modal add/edit -->
+    <div id="modal" style="display: none" class="modal-backdrop">
+      <div class="modal-card">
+        <h3 style="margin: 0 0 10px 0">Add / Edit Component</h3>
+
+        <div style="display: flex; gap: 8px; align-items: center">
+          <input
+            id="compName"
+            placeholder="Name (eg. Auth Service)"
+            style="
+              flex: 1;
+              padding: 10px;
+              border-radius: 8px;
+              border: 1px solid rgba(255, 255, 255, 0.03);
+              background: transparent;
+              color: #fff;
+            "
+          />
+          <input
+            id="compColor"
+            type="color"
+            value="#6d28d9"
+            title="Choose node color"
+            style="
+              width: 46px;
+              height: 38px;
+              border-radius: 8px;
+              border: none;
+              padding: 0;
+            "
+          />
+        </div>
+
+        <div style="margin-top: 12px; font-weight: 600">Choose logo</div>
+        <div
+          id="logoGrid"
+          style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px"
+        >
+          <!-- logos inserted by JS -->
+        </div>
+
+        <div style="margin-top: 12px; font-weight: 600">Choose tech</div>
+        <div class="tech-grid" id="techGrid"></div>
+
+        <div style="display: flex; justify-content: flex-end; margin-top: 12px">
+          <button id="pickAdd" class="btn primary">Save</button>
+          <button id="modalCancel" class="btn" style="margin-left: 8px">
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /* ---------- CONFIG ---------- */
+      const API_BASE =
+        location.protocol === "file:"
+          ? "http://localhost:8000"
+          : `${location.protocol}//${location.hostname}${
+              location.port ? ":" + location.port : ""
+            }`;
+
+      /* ---------- STATE ---------- */
+      const canvas = document.getElementById("canvas");
+      const linksSvg = document.getElementById("linksSvg");
+      const messagesEl = document.getElementById("messages");
+      const modal = document.getElementById("modal");
+      const techGrid = document.getElementById("techGrid");
+      const logoGrid = document.getElementById("logoGrid");
+
+      let nodes = {};
+      let links = [];
+      let dragState = null;
+      let linkingState = null;
+      let tempPath = null;
+      let editingNodeId = null;
+
+      /* ---------- preselect techs + logos ---------- */
+      const TECHS = [
+        "React",
+        "Vite",
+        "Next.js",
+        "FastAPI",
+        "Node.js",
+        "Postgres",
+        "Redis",
+        "Nginx",
+        "Kafka",
+        "S3",
+      ];
+      const LOGOS = [
+        "🧩",
+        "⚡",
+        "🗄️",
+        "🌐",
+        "🔒",
+        "🧠",
+        "📡",
+        "🧰",
+        "🛰️",
+        "🗂️",
+      ];
+
+      /* ---------- populate UI helpers ---------- */
+      function renderTechGrid() {
+        techGrid.innerHTML = "";
+        TECHS.forEach((t) => {
+          const el = document.createElement("div");
+          el.className = "tech-item";
+          el.dataset.tech = t;
+          el.innerHTML = `<div style="width:28px;height:28px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;color:#fff;margin-right:8px">${t[0]}</div><div style="font-weight:600">${t}</div>`;
+          el.addEventListener("click", () => el.classList.toggle("selected"));
+          techGrid.appendChild(el);
+        });
+      }
+      function renderLogoGrid() {
+        logoGrid.innerHTML = "";
+        LOGOS.forEach((l) => {
+          const b = document.createElement("button");
+          b.type = "button";
+          b.style.padding = "8px";
+          b.style.fontSize = "20px";
+          b.style.borderRadius = "8px";
+          b.style.border = "1px solid rgba(255,255,255,0.03)";
+          b.style.background = "transparent";
+          b.textContent = l;
+          b.addEventListener("click", () => {
+            document
+              .querySelectorAll("#logoGrid button")
+              .forEach((x) => x.classList.remove("selected"));
+            b.classList.add("selected");
+          });
+          logoGrid.appendChild(b);
+        });
+      }
+      renderTechGrid();
+      renderLogoGrid();
+
+      /* ---------- helpers ---------- */
+      function uuid(p = "n") {
+        return p + Math.random().toString(36).slice(2, 9);
+      }
+      function escapeHtml(s) {
+        if (!s && s !== 0) return "";
+        return s.toString().replace(
+          /[&<>"']/g,
+          (m) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#039;",
+            }[m])
+        );
+      }
+      function addMessage(text, who = "ai", metaHtml = "") {
+        const d = document.createElement("div");
+        d.className = "msg " + (who === "user" ? "user" : "ai");
+        if (typeof text === "string")
+          d.innerHTML = `<div>${escapeHtml(text)}</div>${
+            metaHtml ? `<div style="margin-top:8px">${metaHtml}</div>` : ""
+          }`;
+        else
+          d.innerHTML = `<pre style="white-space:pre-wrap;margin:0">${escapeHtml(
+            JSON.stringify(text, null, 2)
+          )}</pre>${
+            metaHtml ? `<div style="margin-top:8px">${metaHtml}</div>` : ""
+          }`;
+        messagesEl.appendChild(d);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+        return d;
+      }
+
+      /* ---------- NODE create & render ---------- */
+      function createNode(data) {
+        const id = data.id || uuid("n");
+        const node = Object.assign(
+          {
+            id,
+            name: "Component",
+            logo: "🧩",
+            color: "#6d28d9",
+            tech: [],
+            desc: "",
+            x: 80,
+            y: 80,
+            disabled: false,
+          },
+          data
+        );
+        nodes[id] = node;
+        renderAll();
+        return id;
+      }
+
+      function renderAll() {
+        document.querySelectorAll(".node").forEach((n) => n.remove());
+        Object.values(nodes).forEach(renderNode);
+        drawLinks();
+      }
+
+      function renderNode(node) {
+        const el = document.createElement("div");
+        el.className = "node";
+        el.dataset.id = node.id;
+        el.style.left = node.x + "px";
+        el.style.top = node.y + "px";
+
+        // use solid background color and adjust border slightly darker
+        el.style.background = node.color || "#6d28d9";
+        // compute text color for contrast (simple luminance)
+        const textColor = getContrastColor(node.color || "#6d28d9");
+        el.style.color = textColor;
+
+        // icon badge uses node.logo and matches contrast
+        el.innerHTML = `
+    <div class="row">
+      <div class="leftmeta">
+        <div class="icon-badge">${escapeHtml(node.logo || "🧩")}</div>
+        <div style="display:flex;flex-direction:column;min-width:120px">
+          <div class="title-node" style="color:${textColor}">${escapeHtml(
+          node.name
+        )}</div>
+          <div class="desc-node" style="color:${adjustAlpha(
+            textColor,
+            0.9
+          )}">${escapeHtml(node.desc || "")}</div>
+        </div>
+      </div>
+      <div style="position:relative"><div class="menu">⋯</div></div>
+    </div>
+    <div class="chips">${
+      (node.tech || [])
+        .map(
+          (t) =>
+            `<span class="chip" data-tech="${escapeHtml(
+              t
+            )}" style="background:rgba(0,0,0,0.12); color:${textColor}">${escapeHtml(
+              t
+            )}</span>`
+        )
+        .join("") || '<span class="chip" style="opacity:.6">no tech</span>'
+    }</div>
+
+    <div class="dot top" data-dot="top" title="connect top"></div>
+    <div class="dot right" data-dot="right" title="connect right"></div>
+    <div class="dot bottom" data-dot="bottom" title="connect bottom"></div>
+    <div class="dot left" data-dot="left" title="connect left"></div>
+  `;
+
+        // menu dropdown (rect buttons)
+        const menuBtn = el.querySelector(".menu");
+        const menu = document.createElement("div");
+        menu.className = "menu-list";
+        menu.innerHTML = `
+    <button class="mbtn" data-act="edit">Edit</button>
+    <button class="mbtn" data-act="duplicate">Duplicate</button>
+    <button class="mbtn" data-act="toggle">Disable</button>
+    <button class="mbtn" data-act="detach">Detach</button>
+    <button class="mbtn mb-danger" data-act="delete">Delete</button>
+  `;
+        el.appendChild(menu);
+        menuBtn.addEventListener("click", (e) => {
+          menu.classList.toggle("show");
+          e.stopPropagation();
+        });
+        document.addEventListener("click", () =>
+          document
+            .querySelectorAll(".menu-list")
+            .forEach((m) => m.classList.remove("show"))
+        );
+
+        menu.querySelectorAll(".mbtn").forEach((b) =>
+          b.addEventListener("click", (ev) => {
+            handleNodeAction(node.id, b.dataset.act);
+            menu.classList.remove("show");
+            ev.stopPropagation();
+          })
+        );
+
+        // chip remove
+        el.querySelectorAll(".chip").forEach((c) =>
+          c.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            const t = c.dataset.tech;
+            nodes[node.id].tech = (nodes[node.id].tech || []).filter(
+              (x) => x !== t
+            );
+            renderAll();
+          })
+        );
+
+        // dot events
+        el.querySelectorAll(".dot").forEach((d) =>
+          d.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            const dot = d.dataset.dot;
+            dotClick(node.id, dot);
+          })
+        );
+
+        // drag
+        el.addEventListener("mousedown", (ev) => {
+          if (
+            ev.target.closest(".menu") ||
+            ev.target.closest(".menu-list") ||
+            ev.target.classList.contains("dot")
+          )
+            return;
+          dragState = {
+            id: node.id,
+            sx: ev.clientX,
+            sy: ev.clientY,
+            ox: node.x,
+            oy: node.y,
+            el,
+          };
+          el.style.cursor = "grabbing";
+          ev.preventDefault();
+        });
+        document.addEventListener("mousemove", (ev) => {
+          if (!dragState) return;
+          const dx = ev.clientX - dragState.sx;
+          const dy = ev.clientY - dragState.sy;
+          const nx = Math.max(0, dragState.ox + dx);
+          const ny = Math.max(0, dragState.oy + dy);
+          nodes[dragState.id].x = nx;
+          nodes[dragState.id].y = ny;
+          dragState.el.style.left = nx + "px";
+          dragState.el.style.top = ny + "px";
+          drawLinks();
+        });
+        document.addEventListener("mouseup", () => {
+          if (dragState) {
+            dragState.el.style.cursor = "grab";
+            dragState = null;
+          }
+        });
+
+        canvas.appendChild(el);
+      }
+
+      /* ---------- connector/link logic (same as before) ---------- */
+      function dotClick(nodeId, dot) {
+        const pos = connectorPos(nodeId, dot);
+        if (!linkingState) {
+          linkingState = { nodeId, dot, startPos: pos };
+          createTempPath(pos.x, pos.y, pos.x + 1, pos.y + 1);
+          const moveHandler = (e) => {
+            const r = canvas.getBoundingClientRect();
+            const mx = e.clientX - r.left + canvas.scrollLeft;
+            const my = e.clientY - r.top + canvas.scrollTop;
+            updateTempPath(
+              linkingState.startPos.x,
+              linkingState.startPos.y,
+              mx,
+              my
+            );
+          };
+          const esc = (e) => {
+            if (e.key === "Escape") cancelLink();
+          };
+          window.addEventListener("mousemove", moveHandler);
+          window.addEventListener("keydown", esc);
+          linkingState._moveHandler = moveHandler;
+          linkingState._escHandler = esc;
+        } else {
+          const from = linkingState;
+          const to = { nodeId, dot };
+          if (from.nodeId === to.nodeId && from.dot === to.dot) {
+            cancelLink();
+            return;
+          }
+          links.push({ id: uuid("l"), from, to });
+          cancelLink();
+          renderAll();
+        }
+      }
+      function cancelLink() {
+        if (linkingState) {
+          if (linkingState._moveHandler)
+            window.removeEventListener("mousemove", linkingState._moveHandler);
+          if (linkingState._escHandler)
+            window.removeEventListener("keydown", linkingState._escHandler);
+        }
+        linkingState = null;
+        removeTempPath();
+      }
+      function createTempPath(x1, y1, x2, y2) {
+        removeTempPath();
+        const p = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "path"
+        );
+        p.setAttribute("class", "temp-path");
+        p.setAttribute("d", cubicPath(x1, y1, x2, y2));
+        linksSvg.appendChild(p);
+        tempPath = p;
+      }
+      function updateTempPath(x1, y1, x2, y2) {
+        if (!tempPath) return;
+        tempPath.setAttribute("d", cubicPath(x1, y1, x2, y2));
+      }
+      function removeTempPath() {
+        if (tempPath) {
+          tempPath.remove();
+          tempPath = null;
+        }
+      }
+      function cubicPath(x1, y1, x2, y2) {
+        const dx = Math.max(40, Math.abs(x2 - x1));
+        const cx1 = x1 + (x2 > x1 ? dx / 3 : -dx / 3);
+        const cx2 = x2 + (x2 > x1 ? -dx / 3 : dx / 3);
+        return `M ${x1} ${y1} C ${cx1} ${y1} ${cx2} ${y2} ${x2} ${y2}`;
+      }
+
+      /* ---------- draw links thin white with arrow ---------- */
+      function drawLinks() {
+        while (linksSvg.firstChild) linksSvg.removeChild(linksSvg.firstChild);
+        const defs = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "defs"
+        );
+        defs.innerHTML = `<marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 0 L 10 5 L 0 10 z" fill="#ffffff"/></marker>`;
+        linksSvg.appendChild(defs);
+        links.forEach((link) => {
+          const f = connectorPos(link.from.nodeId, link.from.dot);
+          const t = connectorPos(link.to.nodeId, link.to.dot);
+          if (!f || !t) return;
+          const p = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "path"
+          );
+          p.setAttribute("d", cubicPath(f.x, f.y, t.x, t.y));
+          p.setAttribute("stroke", "#ffffff");
+          p.setAttribute("stroke-width", "2");
+          p.setAttribute("fill", "none");
+          p.setAttribute("marker-end", "url(#arrow)");
+          p.setAttribute("stroke-linecap", "round");
+          p.style.cursor = "pointer";
+          p.addEventListener("click", (e) => {
+            e.stopPropagation();
+            links = links.filter((l) => l.id !== link.id);
+            drawLinks();
+          });
+          linksSvg.appendChild(p);
+        });
+      }
+
+      /* compute connector positions with scroll */
+      function connectorPos(nodeId, dot) {
+        const el = canvas.querySelector(`.node[data-id="${nodeId}"]`);
+        const node = nodes[nodeId];
+        if (!el || !node) return null;
+        const rect = el.getBoundingClientRect();
+        const canvasRect = canvas.getBoundingClientRect();
+        const x0 = rect.left - canvasRect.left + canvas.scrollLeft;
+        const y0 = rect.top - canvasRect.top + canvas.scrollTop;
+        const w = rect.width,
+          h = rect.height;
+        if (dot === "top") return { x: x0 + w / 2, y: y0 };
+        if (dot === "bottom") return { x: x0 + w / 2, y: y0 + h };
+        if (dot === "left") return { x: x0, y: y0 + h / 2 };
+        if (dot === "right") return { x: x0 + w, y: y0 + h / 2 };
+        return { x: x0 + w / 2, y: y0 + h / 2 };
+      }
+
+      /* ---------- node actions ---------- */
+      function handleNodeAction(nodeId, action) {
+        const node = nodes[nodeId];
+        if (!node) return;
+        if (action === "edit") openEdit(nodeId);
+        if (action === "duplicate") {
+          const copy = Object.assign({}, node, {
+            id: uuid("n"),
+            x: node.x + 20,
+            y: node.y + 20,
+            name: node.name + " (copy)",
+          });
+          createNode(copy);
+        }
+        if (action === "toggle") {
+          node.disabled = !node.disabled;
+          renderAll();
+        }
+        if (action === "detach") {
+          links = links.filter(
+            (l) => l.from.nodeId !== nodeId && l.to.nodeId !== nodeId
+          );
+          drawLinks();
+        }
+        if (action === "delete") {
+          delete nodes[nodeId];
+          links = links.filter(
+            (l) => l.from.nodeId !== nodeId && l.to.nodeId !== nodeId
+          );
+          renderAll();
+        }
+      }
+
+      /* ---------- modal: add/edit handlers ---------- */
+      document
+        .getElementById("canvasAdd")
+        .addEventListener("click", () => openAddModal());
+      document
+        .getElementById("modalCancel")
+        .addEventListener("click", () => closeModal());
+
+      function openAddModal() {
+        editingNodeId = null;
+        document.getElementById("compName").value = "";
+        document.getElementById("compColor").value = "#6d28d9";
+        // clear logo selection
+        document
+          .querySelectorAll("#logoGrid button")
+          .forEach((b) => b.classList.remove("selected"));
+        document
+          .querySelectorAll("#techGrid .tech-item")
+          .forEach((el) => el.classList.remove("selected"));
+        modal.style.display = "flex";
+      }
+      function closeModal() {
+        modal.style.display = "none";
+        editingNodeId = null;
+      }
+
+      // save button
+      document.getElementById("pickAdd").addEventListener("click", () => {
+        const name =
+          document.getElementById("compName").value.trim() || "Component";
+        const color = document.getElementById("compColor").value || "#6d28d9";
+        const logoBtn = document.querySelector("#logoGrid button.selected");
+        const logo = logoBtn ? logoBtn.textContent : "🧩";
+        const techs = Array.from(
+          document.querySelectorAll("#techGrid .tech-item.selected")
+        ).map((x) => x.dataset.tech);
+
+        if (editingNodeId) {
+          nodes[editingNodeId].name = name;
+          nodes[editingNodeId].color = color;
+          nodes[editingNodeId].logo = logo;
+          nodes[editingNodeId].tech = techs;
+          renderAll();
+          closeModal();
+          return;
+        }
+
+        createNode({
+          name,
+          color,
+          logo,
+          tech: techs,
+          x: 120 + Object.keys(nodes).length * 10,
+          y: 80 + Object.keys(nodes).length * 10,
+        });
+        closeModal();
+      });
+
+      // open edit of existing node
+      function openEdit(nodeId) {
+        editingNodeId = nodeId;
+        const node = nodes[nodeId];
+        document.getElementById("compName").value = node.name;
+        document.getElementById("compColor").value = node.color || "#6d28d9";
+        document
+          .querySelectorAll("#logoGrid button")
+          .forEach((b) =>
+            b.classList.toggle(
+              "selected",
+              b.textContent === (node.logo || "🧩")
+            )
+          );
+        document
+          .querySelectorAll("#techGrid .tech-item")
+          .forEach((el) =>
+            el.classList.toggle("selected", node.tech.includes(el.dataset.tech))
+          );
+        modal.style.display = "flex";
+      }
+
+      /* add click-to-edit support when clicking menu Edit: it's wired earlier in handleNodeAction -> openEdit */
+
+      /* ---------- chat: send prompt + include current_design ---------- */
+      document.getElementById("sendBtn").addEventListener("click", sendPrompt);
+      document.getElementById("prompt").addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) sendPrompt();
+      });
+      document.getElementById("clearChat").addEventListener("click", () => {
+        messagesEl.innerHTML = "";
+      });
+
+      // --- Add this helper so the chat can include the current canvas state in the API call ---
+      function shallowNodesForApi() {
+        const out = {};
+        Object.keys(nodes).forEach((k) => {
+          const n = nodes[k];
+          out[k] = {
+            name: n.name,
+            tech: Array.isArray(n.tech) ? n.tech.join(", ") : n.tech || "",
+            description: n.desc || "",
+            x: Math.round(n.x || 0),
+            y: Math.round(n.y || 0),
+          };
+        });
+        return out;
+      }
+
+      async function sendPrompt() {
+        const prompt = document.getElementById("prompt").value.trim();
+        if (!prompt) return;
+        addMessage(prompt, "user");
+        document.getElementById("prompt").value = "";
+        const thinking = addMessage("Thinking...", "ai");
+
+        const payload = {
+          prompt,
+          current_design: {
+            nodes: shallowNodesForApi(),
+            links: links.map((l) => ({ from: l.from.nodeId, to: l.to.nodeId })),
+          },
+        };
+
+        try {
+          const res = await fetch(`${API_BASE}/api/generate_design`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          thinking.remove();
+
+          let design = data.design || null;
+          if (!design && data.text) {
+            try {
+              design = JSON.parse(data.text);
+            } catch (e) {
+              design = null;
+            }
+          }
+
+          if (design) {
+            const wrapper = document.createElement("div");
+            wrapper.className = "msg ai";
+            const pre = document.createElement("pre");
+            pre.style.whiteSpace = "pre-wrap";
+            pre.style.margin = "0";
+            pre.textContent = JSON.stringify(design, null, 2);
+            const applyBtn = document.createElement("button");
+            applyBtn.className = "btn primary";
+            applyBtn.style.marginTop = "8px";
+            applyBtn.textContent = "Apply";
+            applyBtn.addEventListener("click", () => applyDesign(design));
+            wrapper.appendChild(pre);
+            wrapper.appendChild(applyBtn);
+            messagesEl.appendChild(wrapper);
+            messagesEl.scrollTop = messagesEl.scrollHeight;
+          } else {
+            addMessage(
+              data.text || data.error || "No valid design returned",
+              "ai"
+            );
+          }
+        } catch (err) {
+          console.error(err);
+          try {
+            thinking.remove();
+          } catch (e) {}
+          addMessage("Error contacting server: " + (err.message || err), "ai");
+        }
+      }
+
+      /* when Apply clicked in chat */
+      function applyDesign(design) {
+        if (!design || !design.nodes) {
+          addMessage("Design missing nodes", "ai");
+          return;
+        }
+        nodes = {};
+        links = [];
+        const keys = Object.keys(design.nodes);
+        keys.forEach((k, i) => {
+          const n = design.nodes[k];
+          const color = n.color || n.bg || "#6d28d9";
+          const logo = n.logo || "🧩";
+          const techs =
+            n.tech && typeof n.tech === "string"
+              ? n.tech.split(",").map((x) => x.trim())
+              : Array.isArray(n.tech)
+              ? n.tech
+              : [];
+          createNode({
+            id: k,
+            name: n.name || k,
+            color,
+            logo,
+            tech: techs,
+            desc: n.description || n.desc || "",
+            x: n.x || 80 + i * 30,
+            y: n.y || 80 + i * 20,
+          });
+        });
+        (design.connections || design.links || []).forEach((c) => {
+          if (typeof c === "string") {
+            const [a, b] = c.split("->").map((s) => s && s.trim());
+            if (a && b)
+              links.push({
+                id: uuid("l"),
+                from: { nodeId: a, dot: "right" },
+                to: { nodeId: b, dot: "left" },
+              });
+          } else if (c.from && c.to)
+            links.push({
+              id: uuid("l"),
+              from: { nodeId: c.from, dot: c.fromDot || "right" },
+              to: { nodeId: c.to, dot: c.toDot || "left" },
+            });
+        });
+        renderAll();
+        addMessage("Design applied to canvas", "ai");
+      }
+
+      /* ---------- small util functions ---------- */
+      /* choose readable text color based on background hex (#rrggbb) */
+      function getContrastColor(hex) {
+        try {
+          const c = hex.replace("#", "");
+          const r = parseInt(c.substring(0, 2), 16);
+          const g = parseInt(c.substring(2, 4), 16);
+          const b = parseInt(c.substring(4, 6), 16);
+          // relative luminance
+          const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+          return luminance > 0.55 ? "#000000" : "#ffffff";
+        } catch (e) {
+          return "#ffffff";
+        }
+      }
+      function adjustAlpha(hex, factor) {
+        // return rgba string with factor alpha applied on white/black? We'll return color as rgba of hex (approx)
+        try {
+          const c = hex.replace("#", "");
+          const r = parseInt(c.substring(0, 2), 16);
+          const g = parseInt(c.substring(2, 4), 16);
+          const b = parseInt(c.substring(4, 6), 16);
+          return `rgba(${r},${g},${b},${factor})`;
+        } catch (e) {
+          return `rgba(255,255,255,${factor})`;
+        }
+      }
+
+      /* ---------- init with sample nodes ---------- */
+      createNode({
+        id: "frontend",
+        name: "Frontend",
+        logo: "🌐",
+        color: "#6d28d9",
+        tech: ["React", "Vite"],
+        desc: "Client UI",
+        x: 80,
+        y: 60,
+      });
+      createNode({
+        id: "api",
+        name: "API Gateway",
+        logo: "🛰️",
+        color: "#0ea5a4",
+        tech: ["FastAPI", "Nginx"],
+        desc: "Public API",
+        x: 520,
+        y: 90,
+      });
+      createNode({
+        id: "backend",
+        name: "Backend",
+        logo: "🧠",
+        color: "#f97316",
+        tech: ["Node.js"],
+        desc: "Business logic",
+        x: 360,
+        y: 220,
+      });
+      createNode({
+        id: "db",
+        name: "Postgres",
+        logo: "🗄️",
+        color: "#0ea5a4",
+        tech: ["Postgres"],
+        desc: "Primary DB",
+        x: 240,
+        y: 380,
+      });
+      links.push({
+        id: uuid("l"),
+        from: { nodeId: "frontend", dot: "right" },
+        to: { nodeId: "api", dot: "left" },
+      });
+      links.push({
+        id: uuid("l"),
+        from: { nodeId: "api", dot: "bottom" },
+        to: { nodeId: "backend", dot: "top" },
+      });
+      links.push({
+        id: uuid("l"),
+        from: { nodeId: "backend", dot: "bottom" },
+        to: { nodeId: "db", dot: "left" },
+      });
+      renderAll();
+
+      /* ---------- resize observe ---------- */
+      new ResizeObserver(() => drawLinks()).observe(canvas);
+      canvas.addEventListener("click", () => cancelLink());
+    </script>
+  </body>
+</html>
