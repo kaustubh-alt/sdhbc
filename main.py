@@ -14,7 +14,7 @@ import google.generativeai as genai
 
 load_dotenv()
 
-GOOGLE_API_KEY = os.getenv("AIzaSyBoC4PdP_nNb3Vf6y3khN30h7IK3jdQ5iU")
+GOOGLE_API_KEY = os.getenv("googleapikey")
 if not GOOGLE_API_KEY:
     print("Warning: GOOGLE_API_KEY not set — endpoint will return a sample design for local testing.")
 else:
