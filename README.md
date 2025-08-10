@@ -43,18 +43,20 @@ From initial concept to final design, the AI assistant helps transform your idea
 
 ## Screenshots
 
-### 1. Elegant Interactive Canvas  
+ 
 ![Screenshot 1](/ss/Screenshot%202025-08-08%20161905.png)
 
 ---
 
-### 2. AI Assistant in Action  
-![Screenshot 2](/ss/Screenshot%202025-08-08%20161905.png)
 
----
+![Screenshot 2](/ss/Screenshot%202025-08-08%20162320.png)
+![Screenshot 2](/ss/Screenshot%202025-08-10%20224027.png)
+![Screenshot 2](/ss/Screenshot%202025-08-10%20230139.png)
+![Screenshot 2](/ss/Screenshot%202025-08-10%20230149.png)
+![Screenshot 2](/ss/Screenshot%202025-08-10%20230327.png)
+![Screenshot 2](/ss/Screenshot%202025-08-10%20230502.png)
+ 
 
-### 3. Automated System Design Generation  
-![Screenshot 3](path/to/screenshot3.png)
 
 ---
 
@@ -66,18 +68,9 @@ Explore the power of AI-assisted system design with Scurd and transform how your
 
 ## Technologies Used
 
-- Interactive Canvas Framework  
+- Interactive Canvas Framework 
 - Advanced AI and NLP models  
-- Modern Web Technologies (React, Node.js, etc.)
+- Web Technologies (HTML, FastAPI, etc.)
 
 ---
 
-## Contributing
-
-Contributions, feedback, and feature requests are welcome! Please open an issue or submit a pull request.
-
----
-
-## License
-
-MIT License
