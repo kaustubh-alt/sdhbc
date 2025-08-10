@@ -44,12 +44,12 @@ From initial concept to final design, the AI assistant helps transform your idea
 ## Screenshots
 
 ### 1. Elegant Interactive Canvas  
-![Screenshot 1](path/to/screenshot1.png)
+![Screenshot 1](/ss/Screenshot%202025-08-08%20161905.png)
 
 ---
 
 ### 2. AI Assistant in Action  
-![Screenshot 2](path/to/screenshot2.png)
+![Screenshot 2](/ss/Screenshot%202025-08-08%20161905.png)
 
 ---
 
