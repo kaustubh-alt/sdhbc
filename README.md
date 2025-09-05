@@ -44,17 +44,21 @@ From initial concept to final design, the AI assistant helps transform your idea
 ## Screenshots
 
  
-![Screenshot 1](/ss/Screenshot%202025-08-08%20161905.png)
+![Screenshot 1](/ss/one.png)
 
 ---
 
 
-![Screenshot 2](/ss/Screenshot%202025-08-08%20162320.png)
-![Screenshot 2](/ss/Screenshot%202025-08-10%20224027.png)
-![Screenshot 2](/ss/Screenshot%202025-08-10%20230139.png)
-![Screenshot 2](/ss/Screenshot%202025-08-10%20230149.png)
-![Screenshot 2](/ss/Screenshot%202025-08-10%20230327.png)
-![Screenshot 2](/ss/Screenshot%202025-08-10%20230502.png)
+![Screenshot 2](/ss/two.png)
+![Screenshot 2](/ss/three.png)
+![Screenshot 2](/ss/four.png)
+![Screenshot 2](/ss/five.png)
+![Screenshot 2](/ss/six.png)
+![Screenshot 2](/ss/seven.png)
+![Screenshot 2](/ss/eight.png)
+![Screenshot 2](/ss/nine.png)
+![Screenshot 2](/ss/ten.png)
+![Screenshot 2](/ss/eleven.png)
  
 
 
