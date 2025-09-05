@@ -72,9 +72,11 @@ Explore the power of AI-assisted system design with Scurd and transform how your
 
 ## Technologies Used
 
-- Interactive Canvas Framework 
-- Advanced AI and NLP models  
-- Web Technologies (HTML, FastAPI, etc.)
+- Interactive Canvas Framework (react flow)
+- Advanced AI
+- Web Technologies (React, Django, etc.)
+
+!backend is still in development
 
 ---
 
